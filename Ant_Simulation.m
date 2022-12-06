@@ -1,0 +1,208 @@
+% cleaning stuff
+clc;
+clear; 
+close all;
+rng(1111); % random seed
+
+% loaded data from .mat file is a struct 
+mapName = "mapWall"; % choosing the map to access the parameters
+% fixed parameters (only load the map that is needed)
+%=========================Load Data==========================
+switch mapName
+	case "map1"	
+		% load the map
+		map1 = load('map/map1.mat'); 
+		% assign the parameters
+		time = map1.T; 
+		colonyPos = map1.colony_pos; 
+		colonyProx = map1.colony_proximity_threshold; 
+		foodProx = map1.food_proximity_threshold;
+		foodSource = map1.food_sources; 
+		mapCoord = map1.map_coordinates; 
+		nAnts = map1.n_ants; 
+		walls = [0 0 0 0]; % initialize wall as empty
+	case "map2" 
+		% load the map
+		map2 = load('map/map2.mat'); 
+		% assign the parameters
+		time = map2.T; 
+		colonyPos = map2.colony_pos; 
+		colonyProx = map2.colony_proximity_threshold; 
+		foodProx = map2.food_proximity_threshold;
+		foodSource = map2.food_sources; 
+		mapCoord = map2.map_coordinates; 
+		nAnts = map2.n_ants; 
+		walls = [0 0 0 0]; % initialize wall as empty
+	case "mapWall"
+		% load the map
+		mapWall = load("map/map3_ExtraCredit.mat"); 
+		% assign the parameters
+		time = mapWall.T; 
+		colonyPos = mapWall.colony_pos; 
+		colonyProx = mapWall.colony_proximity_threshold; 
+		foodProx = mapWall.food_proximity_threshold;
+		foodSource = mapWall.food_sources; 
+		mapCoord = mapWall.map_coordinates; 
+		nAnts = mapWall.n_ants; 
+		walls = mapWall.walls;
+	otherwise
+		error("Name of the map is wrong"); 
+end
+
+% customizable parameters (to tune parameters)
+speed = 2; % speed of the ants (step size of ants in each time stamp)
+rSmell = 7; % size of the radius (to smell pheromones)
+sigma1 = 0.0; % angle update coefficient (with food in r_smell) 
+sigma2 = 1.0; % angle update coefficient (without food in r_smell) 
+deltaR = 0.05; % linear decay for red pheromone
+deltaB = 0.1; % linear decay for blue pheromone
+
+% initialize the ants
+% create the ant struct
+ant = struct; 
+ant.x = colonyPos(1) ; % ant's x position
+ant.y = colonyPos(2); % ant's y position
+ant.angle = 0; % ant's current angle
+ant.foodStatus = false; % status indicates whethers ants is carrying food
+%ants = repmat(ant, 1, 10);% create the ants with array of struct 
+ants = repmat(ant, 1, nAnts);% create the ants with array of struct 
+% initialize each ants angle
+initAngle = linspace(0, 2*pi, length(ants)); 
+for i = 1:length(ants)
+	ants(i).angle = initAngle(i); 
+end
+
+% initialize pheromones
+pheromonesR = []; % x_pos, y_pos
+pheromonesB = []; % x_pos, y_pos
+concentrationR = []; % concentration
+concentrationB = []; % concentration
+% colony food counter variable
+colonyFood = 0; % counter for the food inside the colony
+
+%=====================Recording Video=====================
+switch mapName
+	case "map1"
+		videoFile = VideoWriter('finalProjectMap1.mp4', 'MPEG-4');
+	case "map2" 
+		videoFile = VideoWriter('finalProjectMap2.mp4', 'MPEG-4');
+	case "mapWall"
+		videoFile = VideoWriter('finalProjectMapWall.mp4', 'MPEG-4');
+end
+videoFile.FrameRate = 10;
+open(videoFile) %start recording
+
+% Initialize plot parameters
+plotPauseT = 0.01; % time delay between each plot refresh
+rsltFig = figure(1); 
+xlim([mapCoord(1), mapCoord(3)]); % given the map size
+ylim([mapCoord(2), mapCoord(4)]); 
+for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...) 
+	clf(rsltFig); 
+	xlim([mapCoord(1), mapCoord(3)]); % given the map size
+	ylim([mapCoord(2), mapCoord(4)]); 
+	grid on; 
+	%=========================Update Parameters========================
+	for i = 1:length(ants) % iterate over ants (i.e., for each ant...) 
+		% case if ants has food
+		if ants(i).foodStatus == true
+			% compute the new angle	(if ant has food, it will follow the blue pheromone)
+			[newAngle] = ComputeNewAngle(ants(i).x, ants(i).y, ants(i).angle, pheromonesB, concentrationB, rSmell, sigma1, sigma2); 
+			% validate the next move
+			[ants(i).x, ants(i).y, ants(i).angle] = MovementValidationExecution(ants(i).x, ants(i).y, newAngle, speed, mapCoord, walls); 
+			% else, check the colony proximity and drop the food if it's close.
+			[indicator] = CheckColonyProximity(ants(i).x, ants(i).y, colonyPos, colonyProx); 
+			% check whether it should drop the food
+			if indicator == true
+				% drop the food 
+				ants(i).foodStatus = false; 
+				colonyFood = colonyFood + 1; 
+				ants(i).angle = rem(ants(i).angle + pi, 2*pi); 
+			end
+		end
+		% case if ants doesn't have food
+		if ants(i).foodStatus == false
+			% compute the new angle	(if ant doesn't have food, it will follow the red pheromone)
+			[newAngle] = ComputeNewAngle(ants(i).x, ants(i).y, ants(i).angle, pheromonesR, concentrationR, rSmell, sigma1, sigma2); 
+			% validate the next move
+			[ants(i).x, ants(i).y, ants(i).angle] = MovementValidationExecution(ants(i).x, ants(i).y, newAngle, speed, mapCoord, walls); 
+			[foodSource, indicator] = CheckFoodProximity(ants(i).x, ants(i).y, foodSource, foodProx);
+			if indicator == true
+				ants(i).foodStatus = true; 
+				ants(i).angle = rem(ants(i).angle + pi, 2*pi); 
+			end 
+		end
+	end % end iterate over ants	
+	%========================Update Pheromone===========================
+	%*********************Decay Pheromone****************
+	[pheromonesR, concentrationR] = PheromonesUpdate(pheromonesR, concentrationR, deltaR); 	
+	[pheromonesB, concentrationB] = PheromonesUpdate(pheromonesB, concentrationB, deltaB); 	
+	%*********************Add New Pheromone****************
+	for antInd = 1:length(ants)
+		if ants(antInd).foodStatus == true
+			% drop red pheromone if ant carries food
+			curX = ants(antInd).x;
+			curY = ants(antInd).y; 
+		 	pheromonesR(end+1,:) = [curX curY]; 
+			concentrationR(end+1) = 1;
+		else
+			% if it's empty, then drop blue pheromone
+			curX = ants(antInd).x;
+			curY = ants(antInd).y;
+		 	pheromonesB(end+1,:) = [curX curY]; 
+			concentrationB(end+1) = 1;
+		end	
+	end
+	%=========================Start Plotting============================
+	title("Time Stamp: "+string(tCurrent)+", "+"Colony Food: "+string(colonyFood)); 
+	xlim([mapCoord(1), mapCoord(3)]); % given the map size
+	ylim([mapCoord(2), mapCoord(4)]); 
+	%******************Plot Colony****************
+	viscircles(colonyPos, colonyProx, 'color', 'c'); hold on; 
+	%**************Plot Ants' Position************
+	for i = 1:length(ants)
+		antsX(i) = ants(i).x; 
+		antsY(i) = ants(i).y;
+	end
+	plot(antsX, antsY, "*k", 'MarkerSize', 8); hold on; 
+	%****************Plot Phermone****************
+	[rows, cols] = size(pheromonesR); 
+	if rows ~= 0
+		for i = 1:rows
+			plot(pheromonesR(i,1), pheromonesR(i,2), '.',...
+					'Color', [1, 1-concentrationR(i), 1-concentrationR(i)],...
+					'MarkerSize', 10); 
+			hold on; 
+		end
+	end
+	[rows, cols] = size(pheromonesB); 
+	if rows ~= 0
+		for i = 1:rows
+			plot(pheromonesB(i,1), pheromonesB(i,2), '.',...
+					'Color', [1-concentrationB(i), 1-concentrationB(i), 1],...
+					'MarkerSize', 10); 
+			hold on; 
+		end
+	end 
+	%***************Plot the Wall*****************
+	[nWall, column] = size(walls); 	
+	for i=1:nWall
+		xS = walls(i,1); % x pos of the start point
+		yS = walls(i,2); % y pos of the start point
+		w = abs(walls(i,3) - walls(i,1)); % width 
+		h = abs(walls(i,4) - walls(i,2)); % height
+		rectangle('Position', [xS, yS, w, h], 'FaceColor', 'k', 'EdgeColor', 'k'); 
+		hold on; 
+	end
+	%****************Plot Food Sources**********
+	plot(foodSource(:,1), foodSource(:,2), 'vm'); hold on; 
+
+	hold off; 
+	%=====================Capture the current plot in the video
+	capturedFrame = getframe(gcf);
+	writeVideo(videoFile, capturedFrame)
+
+	pause(plotPauseT); 
+end % end iterate over timestamps  	
+
+close(videoFile)

@@ -1,6 +1,11 @@
 # Prerequisites
 *.d
 
+# user define file
+**.zip
+**.mp4
+
+
 # Compiled Object files
 *.slo
 *.lo
