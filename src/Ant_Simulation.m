@@ -83,11 +83,11 @@ colonyFood = 0; % counter for the food inside the colony
 %=====================Recording Video=====================
 switch mapName
 	case "map1"
-		videoFile = VideoWriter('finalProjectMap1.mp4', 'MPEG-4');
+		videoFile = VideoWriter('../video/finalProjectMap1.mp4', 'MPEG-4');
 	case "map2" 
-		videoFile = VideoWriter('finalProjectMap2.mp4', 'MPEG-4');
+		videoFile = VideoWriter('../video/finalProjectMap2.mp4', 'MPEG-4');
 	case "mapWall"
-		videoFile = VideoWriter('finalProjectMapWall.mp4', 'MPEG-4');
+		videoFile = VideoWriter('../video/finalProjectMapWall.mp4', 'MPEG-4');
 end
 videoFile.FrameRate = 10;
 open(videoFile) %start recording
