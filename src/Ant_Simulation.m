@@ -50,11 +50,11 @@ end
 
 % customizable parameters (to tune parameters)
 speed = 2; % speed of the ants (step size of ants in each time stamp)
-rSmell = 7; % size of the radius (to smell pheromones)
-sigma1 = 0.001; % angle update coefficient (with food in r_smell) 
-sigma2 = 0.8; % angle update coefficient (without food in r_smell) 
-deltaR = 0.04; % linear decay for red pheromone
-deltaB = 0.05; % linear decay for blue pheromone
+rSmell = 8; % size of the radius (to smell pheromones)
+sigma1 = 0.01; % angle update coefficient (with food in r_smell) 
+sigma2 = 0.6; % angle update coefficient (without food in r_smell) 
+deltaR = 0.08; % linear decay for red pheromone
+deltaB = 0.1; % linear decay for blue pheromone
 
 % initialize the ants
 % create the ant struct
@@ -63,8 +63,8 @@ ant.x = colonyPos(1) ; % ant's x position
 ant.y = colonyPos(2); % ant's y position
 ant.angle = 0; % ant's current angle
 ant.foodStatus = false; % status indicates whethers ants is carrying food
-ants = repmat(ant, 1, 50);% create the ants with array of struct 
-%ants = repmat(ant, 1, nAnts);% create the ants with array of struct 
+%ants = repmat(ant, 1, 50);% create the ants with array of struct 
+ants = repmat(ant, 1, nAnts);% create the ants with array of struct 
 % initialize each ants angle
 initAngle = linspace(0, 2*pi, length(ants)); 
 for i = 1:length(ants)
@@ -84,9 +84,9 @@ pheromonesColony = [];
 concentrationColony = []; 
 curInd = 1; 
 tempAngle = linspace(0, 2*pi-0.01, numColonyPheromones); 
-temptCon = 100; 
-for i = 1:length(tempAngle)
-	for R = colonyProx:(colonyProx+5)
+temptCon = 10; 
+for R = colonyProx:2:(colonyProx+8)
+	for i = 1:length(tempAngle)
 		if tempAngle(i) == 0 || tempAngle(i) == pi
 			pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * R; 
 			pheromonesColony(curInd, 2) = colonyPos(2); 
@@ -97,10 +97,16 @@ for i = 1:length(tempAngle)
 			pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * R; 
 			pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * R; 
 		end 
-		concentrationColony(curInd) = temptCon; 
+		if temptCon > 1
+			concentrationColony(curInd) = temptCon; 
+		else
+			concentrationColony(curInd) = 1;  
+		end
 		curInd = curInd + 1; 
 	end
-	temptCon = temptCon * 0.7; 
+	temptCon = temptCon * 0.5; 
+	numColonyPheromones = numColonyPheromones - 5; 
+	tempAngle = linspace(0, 2*pi-0.01, numColonyPheromones); 	
 end
 
 %=====================Recording Video=====================
@@ -151,7 +157,7 @@ for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...)
 		if ants(i).foodStatus == false
 			% compute the new angle	(if ant doesn't have food, it will follow the red pheromone)
 			pheromonesMixR = cat(1, foodSource, pheromonesR); 
-			concentrationMixR = cat(2, ones(1,length(foodSource))*100, concentrationR); 
+			concentrationMixR = cat(2, ones(1,length(foodSource))*1000, concentrationR); 
 			[newAngle] = ComputeNewAngle(ants(i).x, ants(i).y, ants(i).angle, pheromonesMixR, concentrationMixR, rSmell, sigma1, sigma2); 
 			% validate the next move
 			[ants(i).x, ants(i).y, ants(i).angle] = MovementValidationExecution(ants(i).x, ants(i).y, newAngle, speed, mapCoord, walls); 
@@ -186,8 +192,7 @@ for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...)
 	title("Time Stamp: "+string(tCurrent)+", "+"Colony Food: "+string(colonyFood)); 
 	xlim([mapCoord(1), mapCoord(3)]); % given the map size
 	ylim([mapCoord(2), mapCoord(4)]); 
-	%******************Plot Colony****************
-	viscircles(colonyPos, colonyProx, 'color', 'c'); hold on; 
+	hold on; 
 	%**************Plot Ants' Position************
 	for i = 1:length(ants)
 		antsX(i) = ants(i).x; 
@@ -213,10 +218,6 @@ for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...)
 			hold on; 
 		end
 	end 
-	% plot the colony pheromones
-	plot(pheromonesColony(:,1), pheromonesColony(:,2), '.',...
-					'Color', [1-concentrationB(i), 1-concentrationB(i), 1],...
-					'MarkerSize', 10); 
 	%***************Plot the Wall*****************
 	[nWall, column] = size(walls); 	
 	for i=1:nWall
@@ -227,6 +228,8 @@ for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...)
 		rectangle('Position', [xS, yS, w, h], 'FaceColor', 'k', 'EdgeColor', 'k'); 
 		hold on; 
 	end
+	%******************Plot Colony****************
+	viscircles(colonyPos, colonyProx, 'color', 'c'); hold on; 
 	%****************Plot Food Sources**********
 	plot(foodSource(:,1), foodSource(:,2), 'vm'); hold on; 
 

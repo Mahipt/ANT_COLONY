@@ -73,13 +73,8 @@ inputs:
 			targetY = targetY + pheromones(ind,2)*con; 
 		end
 		% sum of concentration
-		disp("=============New Detection============="); 
-		pheromones(phIns(:),:)
 		targetX = targetX / sumCon; 
 		targetY = targetY / sumCon; 
-		fprintf("Ant: x:%f y:%f\n", x, y); 
-		fprintf("Target: x:%f, y:%f\n", targetX, targetY); 
-		disp("=========================================="); 
 		newAngle = atan2(targetY-y, targetX-x); 
 		angle = newAngle + normrnd(0,sigma_1);
 	else % if there is not pheromone in the smell area
