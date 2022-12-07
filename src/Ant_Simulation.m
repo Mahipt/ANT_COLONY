@@ -1,11 +1,10 @@
-% cleaning stuff
 clc;
 clear; 
 close all;
 rng(1111); % random seed
 
 % loaded data from .mat file is a struct 
-mapName = "mapWall"; % choosing the map to access the parameters
+mapName = "map1"; % choosing the map to access the parameters
 % fixed parameters (only load the map that is needed)
 %=========================Load Data==========================
 switch mapName
@@ -51,11 +50,11 @@ end
 
 % customizable parameters (to tune parameters)
 speed = 2; % speed of the ants (step size of ants in each time stamp)
-rSmell = 7; % size of the radius (to smell pheromones)
-sigma1 = 0.0; % angle update coefficient (with food in r_smell) 
-sigma2 = 1.0; % angle update coefficient (without food in r_smell) 
-deltaR = 0.05; % linear decay for red pheromone
-deltaB = 0.1; % linear decay for blue pheromone
+rSmell = 6.5; % size of the radius (to smell pheromones)
+sigma1 = 0.1; % angle update coefficient (with food in r_smell) 
+sigma2 = 0.6; % angle update coefficient (without food in r_smell) 
+deltaR = 0.01; % linear decay for red pheromone
+deltaB = 0.05; % linear decay for blue pheromone
 
 % initialize the ants
 % create the ant struct
@@ -79,6 +78,26 @@ concentrationR = []; % concentration
 concentrationB = []; % concentration
 % colony food counter variable
 colonyFood = 0; % counter for the food inside the colony
+% initialize colony pheromones
+numColonyPheromones = 30; 
+pheromonesColony = []; 
+concentrationColony = []; 
+curInd = 1; 
+tempAngle = linspace(0, 2*pi-0.01, numColonyPheromones); 
+for i = 1:length(tempAngle)
+	if tempAngle(i) == 0 || tempAngle(i) == pi
+		pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * colonyProx; 
+		pheromonesColony(curInd, 2) = colonyPos(2); 
+	elseif tempAngle(i) == pi/2 || tempAngle(i) == 3*pi/2
+		pheromonesColony(curInd, 1) = colonyPos(1); 
+		pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * colonyProx; 
+	else
+		pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * colonyProx; 
+		pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * colonyProx; 
+	end 
+	concentrationColony(curInd) = 10; 
+	curInd = curInd + 1; 
+end
 
 %=====================Recording Video=====================
 switch mapName
@@ -107,7 +126,11 @@ for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...)
 		% case if ants has food
 		if ants(i).foodStatus == true
 			% compute the new angle	(if ant has food, it will follow the blue pheromone)
-			[newAngle] = ComputeNewAngle(ants(i).x, ants(i).y, ants(i).angle, pheromonesB, concentrationB, rSmell, sigma1, sigma2); 
+			% temporarily add colony pheromone into pheromones
+			pheromonesMixB = cat(1,pheromonesColony, pheromonesB); 
+			concentrationMixB = cat(2, concentrationColony, concentrationB); 
+			[newAngle] = ComputeNewAngle(ants(i).x, ants(i).y, ants(i).angle, pheromonesMixB, concentrationMixB, rSmell, sigma1, sigma2); 
+			% remove the colony pheromone
 			% validate the next move
 			[ants(i).x, ants(i).y, ants(i).angle] = MovementValidationExecution(ants(i).x, ants(i).y, newAngle, speed, mapCoord, walls); 
 			% else, check the colony proximity and drop the food if it's close.
@@ -123,7 +146,9 @@ for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...)
 		% case if ants doesn't have food
 		if ants(i).foodStatus == false
 			% compute the new angle	(if ant doesn't have food, it will follow the red pheromone)
-			[newAngle] = ComputeNewAngle(ants(i).x, ants(i).y, ants(i).angle, pheromonesR, concentrationR, rSmell, sigma1, sigma2); 
+			pheromonesMixR = cat(1, foodSource, pheromonesR); 
+			concentrationMixR = cat(2, ones(1,length(foodSource))*100, concentrationR); 
+			[newAngle] = ComputeNewAngle(ants(i).x, ants(i).y, ants(i).angle, pheromonesMixR, concentrationMixR, rSmell, sigma1, sigma2); 
 			% validate the next move
 			[ants(i).x, ants(i).y, ants(i).angle] = MovementValidationExecution(ants(i).x, ants(i).y, newAngle, speed, mapCoord, walls); 
 			[foodSource, indicator] = CheckFoodProximity(ants(i).x, ants(i).y, foodSource, foodProx);
