@@ -50,10 +50,10 @@ end
 
 % customizable parameters (to tune parameters)
 speed = 2; % speed of the ants (step size of ants in each time stamp)
-rSmell = 4; % size of the radius (to smell pheromones)
-sigma1 = 0.01; % angle update coefficient (with food in r_smell) 
+rSmell = 7; % size of the radius (to smell pheromones)
+sigma1 = 0.001; % angle update coefficient (with food in r_smell) 
 sigma2 = 0.8; % angle update coefficient (without food in r_smell) 
-deltaR = 0.01; % linear decay for red pheromone
+deltaR = 0.04; % linear decay for red pheromone
 deltaB = 0.05; % linear decay for blue pheromone
 
 % initialize the ants
@@ -63,8 +63,8 @@ ant.x = colonyPos(1) ; % ant's x position
 ant.y = colonyPos(2); % ant's y position
 ant.angle = 0; % ant's current angle
 ant.foodStatus = false; % status indicates whethers ants is carrying food
-%ants = repmat(ant, 1, 10);% create the ants with array of struct 
-ants = repmat(ant, 1, nAnts);% create the ants with array of struct 
+ants = repmat(ant, 1, 50);% create the ants with array of struct 
+%ants = repmat(ant, 1, nAnts);% create the ants with array of struct 
 % initialize each ants angle
 initAngle = linspace(0, 2*pi, length(ants)); 
 for i = 1:length(ants)
@@ -84,8 +84,9 @@ pheromonesColony = [];
 concentrationColony = []; 
 curInd = 1; 
 tempAngle = linspace(0, 2*pi-0.01, numColonyPheromones); 
+temptCon = 100; 
 for i = 1:length(tempAngle)
-	for R = colonyProx:(colonyProx+10)
+	for R = colonyProx:(colonyProx+5)
 		if tempAngle(i) == 0 || tempAngle(i) == pi
 			pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * R; 
 			pheromonesColony(curInd, 2) = colonyPos(2); 
@@ -96,9 +97,10 @@ for i = 1:length(tempAngle)
 			pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * R; 
 			pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * R; 
 		end 
-		concentrationColony(curInd) = 10; 
+		concentrationColony(curInd) = temptCon; 
 		curInd = curInd + 1; 
 	end
+	temptCon = temptCon * 0.7; 
 end
 
 %=====================Recording Video=====================
