@@ -4,14 +4,14 @@ close all;
 rng(1111); % random seed
 
 % loaded data from .mat file is a struct 
-mapName = "map1"; % choosing the map to access the parameters
+mapName = "mapWall"; % choosing the map to access the parameters
 % fixed parameters (only load the map that is needed)
 %=========================Load Data==========================
 switch mapName
 	case "map1"	
 		% load the map
 		map1 = load('map/map1.mat'); 
-		% assign the parameters
+	% assign the parameters
 		time = map1.T; 
 		colonyPos = map1.colony_pos; 
 		colonyProx = map1.colony_proximity_threshold; 
