@@ -38,7 +38,7 @@ inputs:
 	angle = ant_angle; 
 	[rows, cols] = size(pheromones); 
 	dist = 0; relativeAngle = 0; 
-	phIns = []; 
+	phIns = []; phInsCurInd = 1; 
 	%===================Find The Point to Turn to==================
 	for phInd = 1:rows
 		% get current pheromone x,y position
@@ -58,7 +58,8 @@ inputs:
 		end
 		%****************Pass the smell criteria******************
 		% store the inside pheromoen (weight x,y position with concentration) 
-		phIns(end+1) = phInd; 
+		phIns(phInsCurInd) = phInd; 
+		phInsCurInd = phInsCurInd + 1; 
 	end
 	%==============Start update the ant's angle==============
 	if length(phIns) ~= 0 % if there are pheromone in the smell area
@@ -72,6 +73,10 @@ inputs:
 			targetY = targetY + pheromones(ind,2)*con; 
 		end
 		% sum of concentration
+		pheromones(phIns(:),:); 
+		sumCon; 
+		targetX; 
+		targetY; 
 		targetX = targetX / sumCon; 
 		targetY = targetY / sumCon; 
 		newAngle = atan2(targetY-y, targetX-x); 

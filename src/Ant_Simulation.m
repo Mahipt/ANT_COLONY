@@ -50,9 +50,9 @@ end
 
 % customizable parameters (to tune parameters)
 speed = 2; % speed of the ants (step size of ants in each time stamp)
-rSmell = 6.5; % size of the radius (to smell pheromones)
-sigma1 = 0.1; % angle update coefficient (with food in r_smell) 
-sigma2 = 0.6; % angle update coefficient (without food in r_smell) 
+rSmell = 4; % size of the radius (to smell pheromones)
+sigma1 = 0.01; % angle update coefficient (with food in r_smell) 
+sigma2 = 0.8; % angle update coefficient (without food in r_smell) 
 deltaR = 0.01; % linear decay for red pheromone
 deltaB = 0.05; % linear decay for blue pheromone
 
@@ -85,18 +85,20 @@ concentrationColony = [];
 curInd = 1; 
 tempAngle = linspace(0, 2*pi-0.01, numColonyPheromones); 
 for i = 1:length(tempAngle)
-	if tempAngle(i) == 0 || tempAngle(i) == pi
-		pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * colonyProx; 
-		pheromonesColony(curInd, 2) = colonyPos(2); 
-	elseif tempAngle(i) == pi/2 || tempAngle(i) == 3*pi/2
-		pheromonesColony(curInd, 1) = colonyPos(1); 
-		pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * colonyProx; 
-	else
-		pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * colonyProx; 
-		pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * colonyProx; 
-	end 
-	concentrationColony(curInd) = 10; 
-	curInd = curInd + 1; 
+	for R = colonyProx:(colonyProx+10)
+		if tempAngle(i) == 0 || tempAngle(i) == pi
+			pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * R; 
+			pheromonesColony(curInd, 2) = colonyPos(2); 
+		elseif tempAngle(i) == pi/2 || tempAngle(i) == 3*pi/2
+			pheromonesColony(curInd, 1) = colonyPos(1); 
+			pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * R; 
+		else
+			pheromonesColony(curInd, 1) = colonyPos(1) + cos(tempAngle(i)) * R; 
+			pheromonesColony(curInd, 2) = colonyPos(2) + sin(tempAngle(i)) * R; 
+		end 
+		concentrationColony(curInd) = 10; 
+		curInd = curInd + 1; 
+	end
 end
 
 %=====================Recording Video=====================
@@ -209,6 +211,10 @@ for tCurrent = 1:time % iterate over timestamps (i.e., for each timestamp...)
 			hold on; 
 		end
 	end 
+	% plot the colony pheromones
+	plot(pheromonesColony(:,1), pheromonesColony(:,2), '.',...
+					'Color', [1-concentrationB(i), 1-concentrationB(i), 1],...
+					'MarkerSize', 10); 
 	%***************Plot the Wall*****************
 	[nWall, column] = size(walls); 	
 	for i=1:nWall
